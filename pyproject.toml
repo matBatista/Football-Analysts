@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "football-analyst"
+version = "0.1.0"
+description = "A reusable football analytics toolkit built on StatsBomb open data"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Matheus Batista", email = "matheus.batistacs@gmail.com" }
+]
+keywords = ["football", "soccer", "analytics", "statsbomb", "data-visualization"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "statsbombpy>=1.11",
+    "mplsoccer>=1.2",
+    "pandas>=1.5",
+    "matplotlib>=3.6",
+    "numpy>=1.23",
+    "jupyter",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["football_analyst"]
