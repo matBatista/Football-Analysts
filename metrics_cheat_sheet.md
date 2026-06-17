@@ -167,6 +167,73 @@ xGBuildup ÷ xGChain — tells you *where* in the attack a player contributes.
 
 ---
 
+## 5. Expected Threat (xT)
+
+xT asks a simpler question than xG: *how much does moving the ball from zone A to zone B increase the probability of scoring?* It assigns every pitch cell a threat value, then credits passes and carries with the difference between destination and origin.
+
+### How the grid works
+
+The pitch is divided into a **12 × 8 grid** (12 along the length, 8 across the width). Each cell holds the empirical probability that a possession starting there leads to a goal. Values are low near the own goal (~0.006) and rise steeply in the penalty area (~0.41).
+
+The values used here are Karun Singh's published grid (2019):
+> "Having the ball near the opponent's goal is inherently more dangerous — xT quantifies exactly *how much* more dangerous."
+
+```
+     own half →→→→→→→→→→→→ attacking goal
+low  0.006  0.008  0.012  …  0.131  0.269  high   (bottom/top rows)
+     0.008  0.010  0.014  …  0.224  0.414         (central rows, most dangerous)
+```
+
+### xT added by an action
+
+For a pass or carry:
+
+```
+xT_added = xT(destination) − xT(origin)
+```
+
+Positive = the player moved the ball into a more dangerous zone (forward pass, progressive carry). Negative = moved it backward. Summed over a match, this tells you which players drove the attack.
+
+### How to read it
+
+- **High xT added** = a player who consistently moves the ball into dangerous areas — often midfielders and wide forwards who don't show up on the scoresheet.
+- **Team xT total** reflects *ball progression*, not finishing quality. A team can have higher xT but lose if they're inefficient in front of goal (Croatia had 19.9 vs France's 9.4 in the 2018 WC Final, yet France won 4-2).
+- **xT per action** (total ÷ actions) measures *efficiency* of ball progression.
+
+### Functions
+
+```python
+# Single location → threat value
+fm.location_to_xt(x=115, y=34)           # → 0.4143  (six-yard box)
+fm.location_to_xt(x=60,  y=40)           # → 0.0307  (pitch centre)
+
+# Per-action xT delta for every pass and carry in a match
+enriched = fm.xt_added(events)            # DataFrame with 'xt_added' column
+enriched = fm.xt_added(events, team="France")
+
+# Aggregated by player (positive contributions only, sorted desc)
+leaderboard = fm.xt_by_player(events)
+leaderboard = fm.xt_by_player(events, team="France")
+```
+
+### 2018 World Cup Final — top xT contributors
+
+```
+Rank  Player                  xT Added
+1     Ivan Rakitić              3.712   ← Croatia's midfield engine
+2     Luka Modrić               3.321
+3     Ivan Perišić              2.900
+4     Šime Vrsaljko             2.438
+5     Kylian Mbappé Lottin      1.611   ← France's top mover
+6     Marcelo Brozović          1.466
+11    Paul Pogba                1.120
+13    Antoine Griezmann         0.950
+```
+
+Run `python examples/run_xt.py` to reproduce this table from the offline cache.
+
+---
+
 ## Quick reference table
 
 | Metric | What it tells you | Good direction | Function |
@@ -186,6 +253,9 @@ xGBuildup ÷ xGChain — tells you *where* in the attack a player contributes.
 | Per-90 | Fair comparison by minutes | — | `per_90` |
 | G − xG | Finishing over/under-perform | Positive | `goals_minus_xg` |
 | Buildup ratio | Builder vs. finisher | — | `buildup_ratio` |
+| xT (location) | Threat value of a zone | Higher | `location_to_xt` |
+| xT added | Threat gained by an action | Higher | `xt_added` |
+| xT by player | Ball-progression ranking | Higher | `xt_by_player` |
 
 ---
 

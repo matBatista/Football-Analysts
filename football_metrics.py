@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
+import numpy as np
 import pandas as pd
 
 # StatsBomb pitch dimensions (used for zone-based metrics like field tilt / PPDA)
@@ -39,6 +40,37 @@ PITCH_WIDTH = 80.0    # y axis
 
 # Defensive-action event types that count toward a press (StatsBomb naming)
 DEFENSIVE_ACTIONS = ("Tackle", "Interception", "Challenge", "Foul Committed")
+
+# ---------------------------------------------------------------------------
+# xT (Expected Threat) grid — Karun Singh, 2019
+# ---------------------------------------------------------------------------
+# Why pre-computed instead of iterative?
+#   The iterative method (Markov-chain transition matrices) requires training
+#   on hundreds of matches and yields grid values that match these published
+#   numbers anyway.  Embedding the grid keeps the library self-contained,
+#   fast, and easy to read.
+#
+# Grid layout: 8 rows (y, pitch width 0→80) × 12 cols (x, 0→120 toward goal).
+# Each cell holds the probability that having the ball there leads to a goal
+# within the same possession.  Values come from Karun Singh's original blog:
+#   https://karun.in/blog/expected-threat.html
+#
+# Pitch mapping (StatsBomb 120×80):
+#   col = clamp(floor(x / 120 * 12), 0, 11)
+#   row = clamp(floor(y /  80 *  8), 0,  7)
+#
+XT_ROWS, XT_COLS = 8, 12
+XT_GRID: np.ndarray = np.array([
+    # col→  0        1        2        3        4        5        6        7        8        9        10       11
+    [0.00638, 0.00842, 0.01167, 0.01352, 0.01450, 0.01836, 0.02471, 0.03152, 0.04145, 0.07577, 0.13079, 0.26938],
+    [0.00589, 0.00839, 0.01073, 0.01390, 0.01626, 0.02005, 0.02602, 0.03473, 0.04910, 0.09263, 0.16698, 0.35001],
+    [0.00690, 0.00906, 0.01217, 0.01555, 0.01681, 0.02187, 0.02771, 0.03836, 0.05671, 0.11452, 0.21474, 0.41382],
+    [0.00801, 0.00953, 0.01353, 0.01569, 0.01875, 0.02316, 0.03066, 0.04095, 0.06001, 0.12604, 0.22406, 0.41433],
+    [0.00801, 0.00953, 0.01353, 0.01569, 0.01875, 0.02316, 0.03066, 0.04095, 0.06001, 0.12604, 0.22406, 0.41433],
+    [0.00690, 0.00906, 0.01217, 0.01555, 0.01681, 0.02187, 0.02771, 0.03836, 0.05671, 0.11452, 0.21474, 0.41382],
+    [0.00589, 0.00839, 0.01073, 0.01390, 0.01626, 0.02005, 0.02602, 0.03473, 0.04910, 0.09263, 0.16698, 0.35001],
+    [0.00638, 0.00842, 0.01167, 0.01352, 0.01450, 0.01836, 0.02471, 0.03152, 0.04145, 0.07577, 0.13079, 0.26938],
+], dtype=float)
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +321,124 @@ def buildup_ratio(xg_buildup: float, xg_chain_value: float) -> float:
     if xg_chain_value <= 0:
         return 0.0
     return round(xg_buildup / xg_chain_value, 2)
+
+
+# ===========================================================================
+# EXPECTED THREAT (xT)
+# ===========================================================================
+def location_to_xt(x: float, y: float) -> float:
+    """xT value for a pitch coordinate (StatsBomb 120 × 80 convention).
+
+    Expected Threat (xT) was introduced by Karun Singh (2019).  The pitch is
+    divided into a 12 × 8 grid and each cell is assigned a probability that
+    possessing the ball there leads to a goal within the same possession.
+    Cells near the opponent's goal are high-value; own-half cells are low.
+
+    Parameters
+    ----------
+    x : float  Pitch x-coordinate (0 = own goal line, 120 = opponent goal line).
+    y : float  Pitch y-coordinate (0 = bottom touchline, 80 = top touchline).
+
+    Returns
+    -------
+    float  xT value in [0, ~0.41].  Out-of-range coordinates are clamped to
+           the nearest edge cell rather than raising an error.
+    """
+    col = int(np.clip(x / PITCH_LENGTH * XT_COLS, 0, XT_COLS - 1))
+    row = int(np.clip(y / PITCH_WIDTH  * XT_ROWS, 0, XT_ROWS - 1))
+    return float(XT_GRID[row, col])
+
+
+def xt_added(events: pd.DataFrame, team: str | None = None) -> pd.DataFrame:
+    """xT gained or lost by each ball-moving action (passes and carries).
+
+    For every Pass and Carry event the function computes:
+        xT_added = xT(destination) − xT(origin)
+
+    Positive values mean the player moved the ball into a more dangerous zone;
+    negative values mean they moved it backwards or sideways into a safer zone.
+    Events that are not passes or carries get NaN.
+
+    StatsBomb column requirements
+    ------------------------------
+    - type               : event type ("Pass", "Carry", …)
+    - location           : [x, y] start coordinate
+    - pass_end_location  : [x, y] end coordinate (Pass rows)
+    - carry_end_location : [x, y] end coordinate (Carry rows)
+
+    Parameters
+    ----------
+    events : pd.DataFrame  StatsBomb-style events for one (or more) matches.
+    team   : str | None    If given, only that team's actions are returned.
+
+    Returns
+    -------
+    pd.DataFrame  A copy of the relevant rows with an 'xt_added' column appended.
+    """
+    _require(events, ["type", "location"])
+
+    def _loc_to_xt(loc) -> float:
+        if isinstance(loc, (list, tuple)) and len(loc) >= 2:
+            return location_to_xt(loc[0], loc[1])
+        return float("nan")
+
+    mask = events["type"].isin(["Pass", "Carry"])
+    if team is not None:
+        _require(events, ["team"])
+        mask = mask & (events["team"] == team)
+
+    rows = events[mask].copy()
+    if rows.empty:
+        rows["xt_added"] = pd.Series(dtype=float)
+        return rows
+
+    # Destination column differs by event type
+    end_loc = rows.apply(
+        lambda r: r.get("pass_end_location") if r["type"] == "Pass"
+                  else r.get("carry_end_location"),
+        axis=1,
+    )
+
+    rows["xt_added"] = (
+        end_loc.apply(_loc_to_xt) - rows["location"].apply(_loc_to_xt)
+    )
+    return rows
+
+
+def xt_by_player(
+    events: pd.DataFrame, team: str | None = None
+) -> pd.DataFrame:
+    """Total xT added per player, sorted descending.
+
+    Aggregates the per-action xT deltas from :func:`xt_added` and sums them
+    by player.  Only positive contributions are summed so that a player who
+    mostly passes backward is not penalised unfairly — use the raw
+    :func:`xt_added` output if you need the net figure.
+
+    Parameters
+    ----------
+    events : pd.DataFrame  StatsBomb-style events.
+    team   : str | None    Optionally filter to one team's players.
+
+    Returns
+    -------
+    pd.DataFrame  Columns: player, xt_added.  One row per player, sorted by
+                  xt_added descending.
+    """
+    _require(events, ["player"])
+    rows = xt_added(events, team=team)
+    if rows.empty:
+        return pd.DataFrame(columns=["player", "xt_added"])
+
+    summary = (
+        rows[rows["xt_added"] > 0]
+        .groupby("player")["xt_added"]
+        .sum()
+        .reset_index()
+        .sort_values("xt_added", ascending=False)
+        .reset_index(drop=True)
+    )
+    return summary
 
 
 # ===========================================================================

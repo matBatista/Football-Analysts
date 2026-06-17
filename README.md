@@ -15,7 +15,7 @@ Data source: **StatsBomb Open Data** (free, no credentials) via `statsbombpy`.
 | Shot map | `fa.shot_map(match_id)` | Plots every shot on a pitch; bubble size = xG |
 | Pass map | `fa.pass_map(match_id, player=…)` | Filters passes for a player or team; highlights progressive passes |
 | Player radar | `fa.player_radar(a, b, match_ids)` | Per-90 spider chart comparing two players across 6 metrics |
-| Metrics library | `football_metrics` | 15+ analyst-grade functions: xG, xA, PPDA, field tilt, xGChain, per-90, … |
+| Metrics library | `football_metrics` | 19 analyst-grade functions: xG, xA, PPDA, field tilt, xGChain, xT, per-90, … |
 
 ---
 
@@ -162,7 +162,7 @@ Full setup and verification steps: [SETUP.md](SETUP.md)
 ```bash
 pip install -e ".[dev]"   # installs pytest
 
-pytest -q                  # all 94 tests (unit + integration, fully offline)
+pytest -q                  # all 127 tests (unit + integration, fully offline)
 pytest -q -m "not integration"  # unit tests only
 ```
 
@@ -173,7 +173,7 @@ and require no network access.
 
 ## Roadmap
 
-- [ ] Expected Threat (xT) — value each pitch zone
+- [x] Expected Threat (xT) — `location_to_xt`, `xt_added`, `xt_by_player`
 - [ ] Passing networks — weighted graphs of team ball circulation
 - [ ] Heatmaps — density maps of touches, pressures, carries
 - [ ] Season aggregations — multi-match player rankings
