@@ -134,6 +134,21 @@ python3 -m football_analyst.data
 
 Loads 2 978 events from the cached 2018 World Cup final and prints event-type counts.
 
+### Run the test suite
+
+```bash
+# Install dev dependencies (pytest) if not already present
+pip install -e ".[dev]"
+
+# Run all tests (unit + integration) — all run offline using the local cache
+pytest -q
+
+# Unit tests only (no StatsBomb cache required)
+pytest -q -m "not integration"
+```
+
+94 tests, all passing on Python 3.14 with pytest 9.1.
+
 ---
 
 ## How the cache works
@@ -166,6 +181,7 @@ Commands confirmed working on Python 3.14 (Homebrew) with the versions above:
 | `python3 examples/run_pass_map.py` | **CONFIRMED** | Saves `pass_map_player.png` + `pass_map_team.png` |
 | `python3 examples/run_radar.py` | **CONFIRMED** | Saves `outputs/radar.png` |
 | `python3 -m football_analyst.data` | **CONFIRMED** | Loads 2978 events from cache |
+| `pytest -q` | **CONFIRMED** | 94 passed, 0 failed |
 | `jupyter notebook notebooks/01_getting_started.ipynb` | **PENDING** | Requires a browser/GUI — not verified headlessly |
 
 ### Known issue — Python 3.9 (macOS system default)

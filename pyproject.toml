@@ -31,5 +31,15 @@ dependencies = [
     "jupyter",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: tests that use the local StatsBomb cache (offline-safe when cache exists)",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["football_analyst"]

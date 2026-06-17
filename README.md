@@ -157,11 +157,25 @@ Full setup and verification steps: [SETUP.md](SETUP.md)
 
 ---
 
+## Running the tests
+
+```bash
+pip install -e ".[dev]"   # installs pytest
+
+pytest -q                  # all 94 tests (unit + integration, fully offline)
+pytest -q -m "not integration"  # unit tests only
+```
+
+The integration tests read from `sb_cache/events/8658.json` (ships with the repo)
+and require no network access.
+
+---
+
 ## Roadmap
 
 - [ ] Expected Threat (xT) — value each pitch zone
 - [ ] Passing networks — weighted graphs of team ball circulation
 - [ ] Heatmaps — density maps of touches, pressures, carries
 - [ ] Season aggregations — multi-match player rankings
-- [ ] Unit tests + pytest coverage
-- [ ] CI (GitHub Actions) — lint, type-check, smoke test
+- [x] Unit tests + pytest coverage — 94 tests, 16/16 metric functions covered
+- [ ] CI (GitHub Actions) — lint, type-check, run test suite on push
