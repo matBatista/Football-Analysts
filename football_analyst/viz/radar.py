@@ -112,7 +112,8 @@ def player_season_metrics(match_ids, player: str, db: StatsBomb | None = None) -
     if mins <= 0:
         raise ValueError(f"No minutes found for {player!r} in the given matches.")
 
-    per90 = lambda v: round(v / mins * 90, 2)
+    def per90(v):
+        return round(v / mins * 90, 2)
     pass_pct = round(totals["passes_completed"] / totals["passes"] * 100, 1) if totals["passes"] else 0.0
     return {
         "Shots": per90(totals["shots"]),

@@ -1,5 +1,6 @@
 """Generate a player comparison radar.  python examples/run_radar.py"""
-import sys, os
+import os
+import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import football_analyst as fa
 

@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ruff>=0.4"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -40,6 +40,13 @@ pythonpath = ["."]
 markers = [
     "integration: tests that use the local StatsBomb cache (offline-safe when cache exists)",
 ]
+
+[tool.ruff]
+exclude = ["notebooks/"]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["football_analyst"]

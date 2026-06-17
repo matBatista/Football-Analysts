@@ -1,5 +1,7 @@
 # Football Analyst
 
+[![CI](https://github.com/matBatista/Football-Analysts/actions/workflows/ci.yml/badge.svg)](https://github.com/matBatista/Football-Analysts/actions/workflows/ci.yml)
+
 A small, reusable football analytics toolkit in Python. Three production-ready
 visualisations, a standalone metrics library, a cache-first data layer, and free
 data — all built to be read and learned from.

@@ -15,12 +15,11 @@ Spot-check coordinates used in tests:
 """
 
 import math
+from pathlib import Path
 
 import pandas as pd
 import pytest
-from pathlib import Path
 
-import football_metrics as fm
 from football_metrics import XT_GRID, location_to_xt, xt_added, xt_by_player
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -158,7 +157,6 @@ class TestXtAdded:
         # pass_end_location is None → xT(dest) = NaN → xt_added = NaN
         df = _pass_events([{"location": [60, 40], "pass_end_location": None}])
         result = xt_added(df)
-        import math
         assert math.isnan(result["xt_added"].iloc[0])
 
 
