@@ -14,11 +14,13 @@ from fastapi.responses import StreamingResponse
 
 import football_analyst as fa
 from football_analyst.data import StatsBomb
+from webapi.apifootball import router as apifootball_router
 
 app = FastAPI(title="Football Analyst API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
+app.include_router(apifootball_router)
 
 _db = StatsBomb()
 

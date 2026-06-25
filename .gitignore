@@ -24,3 +24,6 @@ outputs/*.png
 .idea/
 .vscode/
 *.swp
+
+# API-Football cache (local SQLite; never commit)
+webapi/af_cache.db
