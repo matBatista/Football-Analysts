@@ -5,6 +5,8 @@ Public API:
 """
 
 from .data import StatsBomb, split_xy
+from .worldcup import WorldCup, match_report
+from .apifootball import APIFootball, APIFootballError
 from .viz.shot_map import shot_map
 from .viz.pass_map import pass_map
 from .viz.radar import player_radar, player_season_metrics
@@ -12,6 +14,10 @@ from .viz.radar import player_radar, player_season_metrics
 __all__ = [
     "StatsBomb",
     "split_xy",
+    "WorldCup",
+    "match_report",
+    "APIFootball",
+    "APIFootballError",
     "shot_map",
     "pass_map",
     "player_radar",

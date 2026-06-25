@@ -112,6 +112,68 @@ See [metrics_cheat_sheet.md](metrics_cheat_sheet.md) for the full reference.
 
 ---
 
+## Recent matches — World Cup 2026 (live data layer)
+
+StatsBomb Open Data is event-level but historical. To analyse a *recent* match
+(e.g. World Cup 2026), use the `WorldCup` layer, which reads the free,
+public-domain **openfootball** dataset (no API key) and caches it under
+`sb_cache/worldcup/`.
+
+```python
+import football_analyst as fa
+
+wc = fa.WorldCup(2026)
+wc.played()                              # DataFrame of finished matches
+wc.fixtures()                            # upcoming matches
+print(wc.report("Brazil", "Morocco"))    # readable match report
+```
+
+Or run the script:
+
+```bash
+python examples/run_worldcup.py                 # latest finished match
+python examples/run_worldcup.py Brazil Morocco  # a specific pairing
+```
+
+This is **summary-level** data (final score, half-time score, goal timeline) —
+not event coordinates, so shot maps and pass maps still require the StatsBomb
+layer. To pull fresh results once new games finish: `fa.WorldCup(2026, refresh=True)`.
+
+---
+
+## Deeper recent-match stats — API-Football (`APIFootball`)
+
+When you need more than the score for a recent match — full team statistics and a
+**real player radar** for World Cup 2026 — use the `APIFootball` layer. It needs a
+free key (set `API_FOOTBALL_KEY`), is cache-first to protect your free quota, and
+covers the most analysis possible *without* event coordinates.
+
+```python
+import football_analyst as fa
+
+api = fa.APIFootball()                    # reads API_FOOTBALL_KEY
+fx  = api.fixtures(season=2026)           # all World Cup 2026 matches (league id 1)
+fid = int(fx.iloc[0]["fixture_id"])
+
+api.match_stats(fid)                       # possession, shots, passes, xG... side by side
+api.player_radar("Vinícius", "Hakimi", [fid], save_path="outputs/radar.png")
+```
+
+Run it: `export API_FOOTBALL_KEY="your_key"` then `python examples/run_apifootball.py`.
+
+What you get vs. what you don't:
+
+| Want | Layer to use |
+|---|---|
+| Score + goal timeline (free, no key) | `WorldCup` |
+| Team stats + player radar + ratings (free key) | `APIFootball` |
+| Shot map / pass map (event coordinates) | `StatsBomb` (historical only) |
+
+API-Football gives **aggregated** stats and per-player performances, not (x, y)
+coordinates — so pass maps and shot maps still need StatsBomb event data.
+
+---
+
 ## How the data layer works
 
 `StatsBomb` is cache-first: every fetch checks `sb_cache/` before hitting the
